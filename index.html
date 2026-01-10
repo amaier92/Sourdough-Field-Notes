@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sourdough Field Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&family=Georgia&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-warm: #F0EDE6;
+            --field-rust: #855C3D;
+            --field-slate: #4A5568;
+            --field-forest: #2D3748;
+        }
+        body { 
+            background-color: var(--bg-warm); 
+            font-family: 'Quicksand', sans-serif;
+            color: var(--field-slate);
+        }
+        .serif { font-family: 'Georgia', serif; }
+        .card { background: white; border-radius: 4px; border: 1px solid #D1CDC4; box-shadow: 2px 2px 0px rgba(0,0,0,0.05); }
+        input, select, textarea { border: 1px solid #D1CDC4 !important; border-radius: 2px !important; padding: 8px; }
+        .btn-primary { background-color: var(--field-forest); color: white; }
+        .btn-today { background-color: var(--field-rust); color: white; }
+        .formula-badge { background: #E2E8F0; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body class="p-4 max-w-md mx-auto pb-20">
+
+    <header class="mb-6 text-center">
+        <h1 class="serif text-3xl font-bold text-[#3d2b1f]">Sourdough <span class="text-[#855c3d]">Field Notes</span></h1>
+        <p class="text-xs uppercase tracking-widest opacity-60">Batch Tracking & Formulas</p>
+    </header>
+
+    <div id="entryForm" class="space-y-6">
+        
+        <section class="card p-4">
+            <h2 class="text-sm font-bold uppercase mb-3 border-b pb-1">Bake Timeline</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs mb-1">Mix Date</label>
+                    <input type="date" id="mixDate" class="w-full text-sm">
+                    <button onclick="setToday('mixDate')" class="mt-2 text-[10px] btn-today px-2 py-1 rounded">Today</button>
+                </div>
+                <div>
+                    <label class="block text-xs mb-1">Bake Date</label>
+                    <input type="date" id="bakeDate" class="w-full text-sm">
+                    <button onclick="setToday('bakeDate')" class="mt-2 text-[10px] btn-today px-2 py-1 rounded">Today</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card p-4">
+            <div class="flex justify-between items-center mb-3 border-b pb-1">
+                <h2 class="text-sm font-bold uppercase">The Mix</h2>
+                <div id="totalHydrationDisplay" class="formula-badge">Hydration: 0%</div>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex gap-2">
+                    <select id="flourMill" class="w-1/2 text-sm">
+                        <option value="">Select Mill</option>
+                        <optgroup label="King Arthur">
+                            <option>KA Bread Flour</option>
+                            <option>KA All-Purpose</option>
+                            <option>KA Whole Wheat</option>
+                        </optgroup>
+                        <optgroup label="Cairnspring Mills">
+                            <option>Trailblazer (T85)</option>
+                            <option>Exultant (Pastry)</option>
+                            <option>Skagit 1109</option>
+                        </optgroup>
+                        <optgroup label="Dry Storage">
+                            <option>70/30 Blend</option>
+                            <option>Rouge de Bordeaux</option>
+                            <option>Turkey Red</option>
+                        </optgroup>
+                    </select>
+                    <div class="flex-1 flex items-center">
+                        <input type="number" id="flourWeight" placeholder="Flour (g)" class="w-full text-sm" oninput="calculateFormula()">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] uppercase font-bold">1st Mix Water (g)</label>
+                        <input type="number" id="water1" class="w-full text-sm" oninput="calculateFormula()">
+                        <input type="number" id="temp1" placeholder="Temp °F" class="w-full text-[10px] mt-1">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase font-bold">2nd Mix Water (g)</label>
+                        <input type="number" id="water2" class="w-full text-sm" oninput="calculateFormula()">
+                        <input type="number" id="temp2" placeholder="Temp °F" class="w-full text-[10px] mt-1">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card p-4">
+            <h2 class="text-sm font-bold uppercase mb-3 border-b pb-1">Levain Mix</h2>
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="block text-[10px]">Flour (g)</label>
+                    <input type="number" id="levFlour" class="w-full text-sm" oninput="calculateFormula()">
+                </div>
+                <div>
+                    <label class="block text-[10px]">Water (g)</label>
+                    <input type="number" id="levWater" class="w-full text-sm" oninput="calculateFormula()">
+                </div>
+                <div>
+                    <label class="block text-[10px]">Starter (g)</label>
+                    <input type="number" id="levStarter" class="w-full text-sm">
+                </div>
+            </div>
+        </section>
+
+        <section class="card p-4">
+            <h2 class="text-sm font-bold uppercase mb-3 border-b pb-1">The Process</h2>
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="number" id="proofTemp" placeholder="Proof Temp °F" class="text-sm">
+                    <select id="foldType" class="text-sm">
+                        <option>Stretch & Fold</option>
+                        <option>Coil Fold</option>
+                        <option>Lamination</option>
+                    </select>
+                </div>
+                <textarea id="addIns" placeholder="Add-ins (Seeds, herbs, etc.)" class="w-full text-sm h-16"></textarea>
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" id="coldProof" placeholder="Cold Proof (Hrs)" class="text-sm">
+                    <input type="text" id="bakeTemp" placeholder="Bake °F" class="text-sm">
+                    <input type="text" id="bakeTime" placeholder="Time (Min)" class="text-sm">
+                </div>
+            </div>
+        </section>
+
+        <button onclick="saveEntry()" class="w-full py-4 btn-primary font-bold uppercase tracking-widest">Save to Library</button>
+    </div>
+
+    <div id="librarySection" class="hidden mt-8 space-y-4">
+        <h2 class="serif text-2xl border-b border-[#855c3d] pb-2 text-[#3d2b1f]">Batch History</h2>
+        <div id="entriesList" class="space-y-4"></div>
+        <button onclick="toggleView()" class="w-full py-3 bg-gray-200 text-sm font-bold">Back to New Entry</button>
+    </div>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-around">
+        <button onclick="showView('form')" class="text-xs uppercase font-bold">New Bake</button>
+        <button onclick="showView('library')" class="text-xs uppercase font-bold">Library</button>
+    </nav>
+
+    <script>
+        // Database Setup
+        const db = new Dexie("SourdoughDB");
+        db.version(1).stores({
+            entries: '++id, mixDate, bakeDate, flourMill'
+        });
+
+        function setToday(id) {
+            document.getElementById(id).value = new Date().toISOString().split('T')[0];
+        }
+
+        function calculateFormula() {
+            const f = parseFloat(document.getElementById('flourWeight').value) || 0;
+            const lf = parseFloat(document.getElementById('levFlour').value) || 0;
+            const lw = parseFloat(document.getElementById('levWater').value) || 0;
+            const w1 = parseFloat(document.getElementById('water1').value) || 0;
+            const w2 = parseFloat(document.getElementById('water2').value) || 0;
+
+            const totalFlour = f + lf;
+            const totalWater = w1 + w2 + lw;
+
+            if (totalFlour > 0) {
+                const hydration = ((totalWater / totalFlour) * 100).toFixed(1);
+                document.getElementById('totalHydrationDisplay').innerText = `Hydration: ${hydration}%`;
+            }
+        }
+
+        async function saveEntry() {
+            const entry = {
+                mixDate: document.getElementById('mixDate').value,
+                bakeDate: document.getElementById('bakeDate').value,
+                flourMill: document.getElementById('flourMill').value,
+                flourWeight: document.getElementById('flourWeight').value,
+                water1: document.getElementById('water1').value,
+                water2: document.getElementById('water2').value,
+                levFlour: document.getElementById('levFlour').value,
+                levWater: document.getElementById('levWater').value,
+                addIns: document.getElementById('addIns').value,
+                coldProof: document.getElementById('coldProof').value,
+                bakeTemp: document.getElementById('bakeTemp').value,
+                bakeTime: document.getElementById('bakeTime').value,
+                hydration: document.getElementById('totalHydrationDisplay').innerText
+            };
+
+            await db.entries.add(entry);
+            alert("Bake saved to library!");
+            showView('library');
+        }
+
+        async function loadLibrary() {
+            const list = document.getElementById('entriesList');
+            list.innerHTML = '';
+            const entries = await db.entries.reverse().toArray();
+
+            entries.forEach(e => {
+                const card = document.createElement('div');
+                card.className = 'card p-4 bg-stone-50';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="text-[10px] font-bold uppercase text-rust">${e.mixDate}</span>
+                        <span class="formula-badge">${e.hydration}</span>
+                    </div>
+                    <h3 class="serif text-lg font-bold">${e.flourMill}</h3>
+                    <p class="text-xs opacity-75">${e.addIns || 'No inclusions'}</p>
+                    <div class="mt-2 pt-2 border-t flex gap-4 text-[10px] font-bold">
+                        <span>BAKE: ${e.bakeTemp}°F</span>
+                        <span>PROOF: ${e.coldProof}h</span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function showView(view) {
+            if (view === 'form') {
+                document.getElementById('entryForm').classList.remove('hidden');
+                document.getElementById('librarySection').classList.add('hidden');
+            } else {
+                document.getElementById('entryForm').classList.add('hidden');
+                document.getElementById('librarySection').classList.remove('hidden');
+                loadLibrary();
+            }
+        }
+    </script>
+</body>
+</html>
