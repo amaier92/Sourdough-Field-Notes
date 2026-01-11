@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sourdough Field Notes v3</title>
+    <title>Sourdough Field Notes v3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&family=Georgia&display=swap" rel="stylesheet">
     <style>
@@ -15,11 +15,10 @@
         label { font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; display: block; color: var(--field-rust); }
         .btn-primary { background-color: var(--field-forest); color: white; padding: 1rem; border-radius: 4px; font-weight: bold; width: 100%; }
         .btn-secondary { border: 1px solid var(--field-forest); color: var(--field-forest); padding: 0.75rem; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 1rem; }
-        .btn-add { font-size: 11px; font-weight: 800; color: var(--field-rust); text-transform: uppercase; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+        .btn-edit { color: var(--field-rust); font-size: 11px; font-weight: 800; text-transform: uppercase; text-decoration: underline; }
         .formula-badge { background: #E2E8F0; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: var(--field-forest); }
         .section-header { font-size: 12px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 12px; }
         .hidden { display: none; }
-        .remove-btn { color: #e53e3e; font-size: 18px; font-weight: bold; padding: 0 8px; }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto pb-10">
@@ -42,50 +41,37 @@
                 <h2 class="section-header !mb-0">The Mix</h2>
                 <div id="totalHydration" class="formula-badge">Hydration: 0%</div>
             </div>
-            
             <label>Flours</label>
             <div id="flourContainer" class="space-y-2">
-                <div class="flour-row flex gap-2">
+                <div class="flour-row flex items-center gap-1">
                     <select class="flour-select w-2/3" onchange="calculateFormula()">
                         <option value="">Select Flour</option>
-                        <optgroup label="King Arthur"><option>KA Bread</option><option>KA AP</option><option>KA Whole Wheat</option></optgroup>
-                        <optgroup label="Cairnspring"><option>Trailblazer</option><option>Exultant</option><option>Skagit 1109</option></optgroup>
-                        <optgroup label="Dry Storage"><option>70/30 Blend</option><option>Rouge de Bordeaux</option></optgroup>
+                        <optgroup label="Cairnspring"><option>Trailblazer (T85)</option><option>Exultant (T70)</option><option>Yecora Rojo</option></optgroup>
+                        <optgroup label="Dry Storage"><option>Rouge de Bordeaux</option><option>White Sonora</option><option>Turkey Red</option></optgroup>
+                        <optgroup label="King Arthur"><option>KA Bread</option><option>KA AP</option></optgroup>
                     </select>
                     <input type="number" class="flour-qty w-1/3" placeholder="Grams" oninput="calculateFormula()">
                 </div>
             </div>
-            <button onclick="addRow('flourContainer')" class="btn-add">+ Add Flour</button>
+            <button onclick="addRow('flourContainer')" class="text-[10px] font-bold mt-2 text-rust uppercase">+ Add Flour</button>
 
             <div class="grid grid-cols-2 gap-4 mt-6">
-                <div><label>1st Water (g)</label><input type="number" id="water1" oninput="calculateFormula()"></div>
-                <div><label>2nd Water (g)</label><input type="number" id="water2" oninput="calculateFormula()"></div>
+                <div><label>1st Water</label><input type="number" id="water1" oninput="calculateFormula()"></div>
+                <div><label>2nd Water</label><input type="number" id="water2" oninput="calculateFormula()"></div>
             </div>
-
             <div class="grid grid-cols-2 gap-4 mt-4">
-                <div><label>Salt (g)</label><input type="number" id="salt" placeholder="12"></div>
-                <div><label>Yeast (g)</label><input type="number" id="yeast" placeholder="0"></div>
-            </div>
-
-            <div class="mt-6">
-                <label>Add-ins (Inclusions)</label>
-                <div id="addinContainer" class="space-y-2">
-                    <div class="addin-row flex gap-2">
-                        <input type="text" class="addin-name w-2/3" placeholder="e.g. Walnuts">
-                        <input type="text" class="addin-qty w-1/3" placeholder="Amount">
-                    </div>
-                </div>
-                <button onclick="addRow('addinContainer')" class="btn-add">+ Add Inclusion</button>
+                <div><label>Salt</label><input type="number" id="salt"></div>
+                <div><label>Yeast</label><input type="number" id="yeast"></div>
             </div>
         </div>
 
         <div class="card p-4">
             <h2 class="section-header">Levain</h2>
-            <div class="grid grid-cols-3 gap-2">
-                <div><label>Flour (g)</label><input type="number" id="levFlour" oninput="calculateFormula()"></div>
-                <div><label>Water (g)</label><input type="number" id="levWater" oninput="calculateFormula()"></div>
-                <div><label>Starter (g)</label><input type="number" id="levStarter"></div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label>Build Flour</label><input type="number" id="levBuildFlour" oninput="calculateFormula()"></div>
+                <div><label>Build Water</label><input type="number" id="levBuildWater" oninput="calculateFormula()"></div>
             </div>
+            <div class="mt-4"><label>Starter in Mix (g)</label><input type="number" id="levUsed" oninput="calculateFormula()"></div>
         </div>
 
         <button id="saveBtn" onclick="saveToCloud()" class="btn-primary">SYNC TO CLOUD</button>
@@ -101,50 +87,39 @@
     <script>
         const CLOUD_URL = "https://script.google.com/macros/s/AKfycbzr7ohfzwz8GIhFUQ3C5mg0v2k3MGai8JlxZU33xAsNoQsg36n6I5cgyfrh1N2u1C5yug/exec";
 
-        function addRow(containerId) {
-            const container = document.getElementById(containerId);
+        function addRow(id) {
+            const container = document.getElementById(id);
             const newRow = container.firstElementChild.cloneNode(true);
-            newRow.querySelectorAll('input').forEach(i => i.value = '');
-            if (containerId === 'flourContainer') {
-                newRow.querySelector('select').selectedIndex = 0;
-            }
+            newRow.querySelector('input').value = '';
             container.appendChild(newRow);
         }
 
         function toggleView() {
-            const isForm = !document.getElementById('formView').classList.contains('hidden');
             document.getElementById('formView').classList.toggle('hidden');
             document.getElementById('libraryView').classList.toggle('hidden');
-            if(isForm) loadHistory();
+            if(!document.getElementById('libraryView').classList.contains('hidden')) loadHistory();
         }
 
         function calculateFormula() {
-            let totalFlour = parseFloat(document.getElementById('levFlour').value) || 0;
-            document.querySelectorAll('.flour-qty').forEach(input => totalFlour += (parseFloat(input.value) || 0));
-            const totalWater = (parseFloat(document.getElementById('water1').value) || 0) + 
-                               (parseFloat(document.getElementById('water2').value) || 0) + 
-                               (parseFloat(document.getElementById('levWater').value) || 0);
-            if (totalFlour > 0) {
-                document.getElementById('totalHydration').innerText = `Hydration: ${((totalWater / totalFlour) * 100).toFixed(1)}%`;
-            }
+            let f = 0; document.querySelectorAll('.flour-qty').forEach(i => f += (parseFloat(i.value) || 0));
+            const w = (parseFloat(document.getElementById('water1').value) || 0) + (parseFloat(document.getElementById('water2').value) || 0);
+            const lbF = parseFloat(document.getElementById('levBuildFlour').value) || 0;
+            const lbW = parseFloat(document.getElementById('levBuildWater').value) || 0;
+            const lUsed = parseFloat(document.getElementById('levUsed').value) || 0;
+            
+            const ratio = lUsed / (lbF + lbW || 1);
+            const totalF = f + (lbF * ratio);
+            const totalW = w + (lbW * ratio);
+
+            if (totalF > 0) document.getElementById('totalHydration').innerText = `Hydration: ${((totalW / totalF) * 100).toFixed(1)}%`;
         }
 
         async function saveToCloud() {
-            const btn = document.getElementById('saveBtn');
-            btn.innerText = "SYNCING...";
-            
-            let flourData = "";
-            document.querySelectorAll('.flour-row').forEach(row => {
-                const name = row.querySelector('.flour-select').value;
-                const qty = row.querySelector('.flour-qty').value;
-                if(qty) flourData += `${name}(${qty}g) `;
-            });
-
-            let addinData = "";
-            document.querySelectorAll('.addin-row').forEach(row => {
-                const name = row.querySelector('.addin-name').value;
-                const qty = row.querySelector('.addin-qty').value;
-                if(name) addinData += `${name}(${qty}), `;
+            const btn = document.getElementById('saveBtn'); btn.innerText = "SAVING...";
+            let flourData = ""; document.querySelectorAll('.flour-row').forEach(r => {
+                const n = r.querySelector('.flour-select').value;
+                const q = r.querySelector('.flour-qty').value;
+                if(q) flourData += `${n}(${q}g) `;
             });
 
             const entry = {
@@ -154,41 +129,46 @@
                 hydration: document.getElementById('totalHydration').innerText,
                 water1: document.getElementById('water1').value,
                 water2: document.getElementById('water2').value,
-                salt: document.getElementById('salt').value + "g",
-                yeast: document.getElementById('yeast').value + "g",
-                addIns: addinData,
-                levain: `F:${document.getElementById('levFlour').value} W:${document.getElementById('levWater').value}`,
-                process: "Temp: " + document.getElementById('levStarter').value // Placeholder for lev starter
+                salt: document.getElementById('salt').value,
+                yeast: document.getElementById('yeast').value,
+                levain: `Used:${document.getElementById('levUsed').value} Ratio:${document.getElementById('levBuildFlour').value}:${document.getElementById('levBuildWater').value}`
             };
 
             await fetch(CLOUD_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry) });
-            alert("Baked and Synced!");
-            btn.innerText = "SYNC TO CLOUD";
+            alert("Entry Saved."); btn.innerText = "SYNC TO CLOUD";
         }
 
         async function loadHistory() {
-            const list = document.getElementById('historyList');
-            list.innerHTML = "Fetching journal...";
-            try {
-                const response = await fetch(CLOUD_URL);
-                const data = await response.json();
-                list.innerHTML = data.reverse().map(item => `
-                    <div class="card p-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-[10px] font-bold text-rust uppercase">${item.MixDate}</span>
-                            <span class="formula-badge">${item.Hydration}</span>
-                        </div>
-                        <p class="serif font-bold text-lg">${item.Flours}</p>
-                        <p class="text-[11px] mt-1 italic">${item.AddIns ? 'Plus: ' + item.AddIns : ''}</p>
-                        <div class="mt-2 pt-2 border-t text-[10px] flex justify-between uppercase font-bold opacity-60">
-                            <span>Salt: ${item.Salt}</span>
-                            <span>Levain: ${item.Levain}</span>
-                        </div>
+            const list = document.getElementById('historyList'); list.innerHTML = "Loading...";
+            const res = await fetch(CLOUD_URL);
+            const data = await res.json();
+            window.allBakes = data; // Store for editing
+            list.innerHTML = data.reverse().map((item, index) => `
+                <div class="card p-4">
+                    <div class="flex justify-between">
+                        <span class="text-[10px] font-bold text-rust uppercase">${item.MixDate}</span>
+                        <span class="formula-badge">${item.Hydration}</span>
                     </div>
-                `).join('');
-            } catch (e) {
-                list.innerHTML = "Error loading history.";
-            }
+                    <p class="serif font-bold text-lg mt-1">${item.Flours}</p>
+                    <button onclick="editBake(${data.length - 1 - index})" class="btn-edit mt-2">Edit Recipe</button>
+                </div>
+            `).join('');
+        }
+
+        function editBake(index) {
+            const b = window.allBakes[index];
+            document.getElementById('mixDate').value = b.MixDate;
+            document.getElementById('bakeDate').value = b.BakeDate;
+            document.getElementById('water1').value = b.Water1;
+            document.getElementById('water2').value = b.Water2;
+            document.getElementById('salt').value = b.Salt;
+            document.getElementById('yeast').value = b.Yeast;
+            // Parse Levain Used
+            const match = b.Levain.match(/Used:(\d+)/);
+            if(match) document.getElementById('levUsed').value = match[1];
+            
+            toggleView();
+            calculateFormula();
         }
     </script>
 </body>
