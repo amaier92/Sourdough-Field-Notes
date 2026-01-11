@@ -2,235 +2,185 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sourdough Field Notes</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&family=Georgia&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-warm: #F0EDE6;
-            --field-rust: #855C3D;
-            --field-slate: #4A5568;
-            --field-forest: #2D3748;
-        }
-        body { 
-            background-color: var(--bg-warm); 
-            font-family: 'Quicksand', sans-serif;
-            color: var(--field-slate);
-        }
+        :root { --bg-warm: #F0EDE6; --field-rust: #855C3D; --field-slate: #4A5568; --field-forest: #2D3748; }
+        body { background-color: var(--bg-warm); font-family: 'Quicksand', sans-serif; color: var(--field-slate); }
         .serif { font-family: 'Georgia', serif; }
-        .card { background: white; border-radius: 4px; border: 1px solid #D1CDC4; box-shadow: 2px 2px 0px rgba(0,0,0,0.05); }
-        input, select, textarea { border: 1px solid #D1CDC4 !important; border-radius: 2px !important; padding: 8px; }
-        .btn-primary { background-color: var(--field-forest); color: white; }
-        .btn-today { background-color: var(--field-rust); color: white; }
-        .formula-badge { background: #E2E8F0; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .card { background: white; border-radius: 4px; border: 1px solid #D1CDC4; box-shadow: 2px 2px 0px rgba(0,0,0,0.05); margin-bottom: 1.25rem; }
+        input, select, textarea { border: 1px solid #D1CDC4 !important; border-radius: 2px !important; padding: 10px; width: 100%; font-size: 16px !important; }
+        label { font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; display: block; color: var(--field-rust); }
+        .btn-primary { background-color: var(--field-forest); color: white; padding: 1rem; border-radius: 4px; font-weight: bold; width: 100%; }
+        .btn-secondary { border: 1px solid var(--field-forest); color: var(--field-forest); padding: 0.75rem; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 1rem; }
+        .btn-today { background-color: var(--field-rust); color: white; font-size: 10px; padding: 4px 8px; border-radius: 2px; margin-top: 4px; display: inline-block; }
+        .formula-badge { background: #E2E8F0; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: var(--field-forest); }
+        .section-header { font-size: 12px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 12px; }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="p-4 max-w-md mx-auto pb-20">
+<body class="p-4 max-w-md mx-auto pb-10">
 
     <header class="mb-6 text-center">
         <h1 class="serif text-3xl font-bold text-[#3d2b1f]">Sourdough <span class="text-[#855c3d]">Field Notes</span></h1>
-        <p class="text-xs uppercase tracking-widest opacity-60">Batch Tracking & Formulas</p>
     </header>
 
-    <div id="entryForm" class="space-y-6">
-        
-        <section class="card p-4">
-            <h2 class="text-sm font-bold uppercase mb-3 border-b pb-1">Bake Timeline</h2>
+    <div id="formView">
+        <div class="card p-4">
+            <h2 class="section-header">Timeline</h2>
             <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs mb-1">Mix Date</label>
-                    <input type="date" id="mixDate" class="w-full text-sm">
-                    <button onclick="setToday('mixDate')" class="mt-2 text-[10px] btn-today px-2 py-1 rounded">Today</button>
-                </div>
-                <div>
-                    <label class="block text-xs mb-1">Bake Date</label>
-                    <input type="date" id="bakeDate" class="w-full text-sm">
-                    <button onclick="setToday('bakeDate')" class="mt-2 text-[10px] btn-today px-2 py-1 rounded">Today</button>
-                </div>
+                <div><label>Mix Date</label><input type="date" id="mixDate"><button onclick="setToday('mixDate')" class="btn-today">Today</button></div>
+                <div><label>Bake Date</label><input type="date" id="bakeDate"><button onclick="setToday('bakeDate')" class="btn-today">Today</button></div>
             </div>
-        </section>
+        </div>
 
-        <section class="card p-4">
-            <div class="flex justify-between items-center mb-3 border-b pb-1">
-                <h2 class="text-sm font-bold uppercase">The Mix</h2>
-                <div id="totalHydrationDisplay" class="formula-badge">Hydration: 0%</div>
+        <div class="card p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="section-header !mb-0">The Mix</h2>
+                <div id="totalHydration" class="formula-badge">Hydration: 0%</div>
             </div>
-            
-            <div class="space-y-3">
-                <div class="flex gap-2">
-                    <select id="flourMill" class="w-1/2 text-sm">
-                        <option value="">Select Mill</option>
-                        <optgroup label="King Arthur">
-                            <option>KA Bread Flour</option>
-                            <option>KA All-Purpose</option>
-                            <option>KA Whole Wheat</option>
-                        </optgroup>
-                        <optgroup label="Cairnspring Mills">
-                            <option>Trailblazer (T85)</option>
-                            <option>Exultant (Pastry)</option>
-                            <option>Skagit 1109</option>
-                        </optgroup>
-                        <optgroup label="Dry Storage">
-                            <option>70/30 Blend</option>
-                            <option>Rouge de Bordeaux</option>
-                            <option>Turkey Red</option>
-                        </optgroup>
+            <div id="flourContainer" class="space-y-3">
+                <div class="flour-row grid grid-cols-2 gap-2">
+                    <select class="flour-select" onchange="calculateFormula()">
+                        <option value="">Select Flour</option>
+                        <optgroup label="King Arthur"><option>KA Bread</option><option>KA AP</option><option>KA Whole Wheat</option></optgroup>
+                        <optgroup label="Cairnspring"><option>Trailblazer</option><option>Exultant</option><option>Skagit 1109</option></optgroup>
+                        <optgroup label="Dry Storage"><option>70/30 Blend</option><option>Rouge de Bordeaux</option></optgroup>
                     </select>
-                    <div class="flex-1 flex items-center">
-                        <input type="number" id="flourWeight" placeholder="Flour (g)" class="w-full text-sm" oninput="calculateFormula()">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[10px] uppercase font-bold">1st Mix Water (g)</label>
-                        <input type="number" id="water1" class="w-full text-sm" oninput="calculateFormula()">
-                        <input type="number" id="temp1" placeholder="Temp °F" class="w-full text-[10px] mt-1">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] uppercase font-bold">2nd Mix Water (g)</label>
-                        <input type="number" id="water2" class="w-full text-sm" oninput="calculateFormula()">
-                        <input type="number" id="temp2" placeholder="Temp °F" class="w-full text-[10px] mt-1">
-                    </div>
+                    <input type="number" class="flour-qty" placeholder="Grams" oninput="calculateFormula()">
                 </div>
             </div>
-        </section>
+            <button onclick="addFlourRow()" class="mt-4 text-[11px] font-bold text-stone-500 uppercase">+ Add Flour</button>
 
-        <section class="card p-4">
-            <h2 class="text-sm font-bold uppercase mb-3 border-b pb-1">Levain Mix</h2>
+            <div class="grid grid-cols-2 gap-4 mt-6">
+                <div><label>1st Water (g)</label><input type="number" id="water1" oninput="calculateFormula()"></div>
+                <div><label>2nd Water (g)</label><input type="number" id="water2" oninput="calculateFormula()"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div><label>Salt (g)</label><input type="number" id="salt" placeholder="12"></div>
+                <div><label>Yeast (g)</label><input type="number" id="yeast" placeholder="0"></div>
+            </div>
+            <div class="mt-4"><label>Add-ins</label><textarea id="addIns" class="h-12"></textarea></div>
+        </div>
+
+        <div class="card p-4">
+            <h2 class="section-header">Levain</h2>
             <div class="grid grid-cols-3 gap-2">
-                <div>
-                    <label class="block text-[10px]">Flour (g)</label>
-                    <input type="number" id="levFlour" class="w-full text-sm" oninput="calculateFormula()">
-                </div>
-                <div>
-                    <label class="block text-[10px]">Water (g)</label>
-                    <input type="number" id="levWater" class="w-full text-sm" oninput="calculateFormula()">
-                </div>
-                <div>
-                    <label class="block text-[10px]">Starter (g)</label>
-                    <input type="number" id="levStarter" class="w-full text-sm">
-                </div>
+                <div><label>Flour (g)</label><input type="number" id="levFlour" oninput="calculateFormula()"></div>
+                <div><label>Water (g)</label><input type="number" id="levWater" oninput="calculateFormula()"></div>
+                <div><label>Starter (g)</label><input type="number" id="levStarter"></div>
             </div>
-        </section>
+        </div>
 
-        <section class="card p-4">
-            <h2 class="text-sm font-bold uppercase mb-3 border-b pb-1">The Process</h2>
-            <div class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="number" id="proofTemp" placeholder="Proof Temp °F" class="text-sm">
-                    <select id="foldType" class="text-sm">
-                        <option>Stretch & Fold</option>
-                        <option>Coil Fold</option>
-                        <option>Lamination</option>
-                    </select>
-                </div>
-                <textarea id="addIns" placeholder="Add-ins (Seeds, herbs, etc.)" class="w-full text-sm h-16"></textarea>
-                <div class="grid grid-cols-3 gap-2">
-                    <input type="text" id="coldProof" placeholder="Cold Proof (Hrs)" class="text-sm">
-                    <input type="text" id="bakeTemp" placeholder="Bake °F" class="text-sm">
-                    <input type="text" id="bakeTime" placeholder="Time (Min)" class="text-sm">
-                </div>
+        <div class="card p-4">
+            <h2 class="section-header">Process</h2>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div><label>Proof Temp</label><input type="number" id="proofTemp"></div>
+                <div><label>Cold Proof (hrs)</label><input type="text" id="coldProof"></div>
             </div>
-        </section>
+            <label>Folds</label>
+            <div class="grid grid-cols-2 gap-2">
+                <select id="fold1"><option>None</option><option>Stretch & Fold</option><option>Coil Fold</option></select>
+                <select id="fold2"><option>None</option><option>Stretch & Fold</option><option>Coil Fold</option></select>
+            </div>
+        </div>
 
-        <button onclick="saveEntry()" class="w-full py-4 btn-primary font-bold uppercase tracking-widest">Save to Library</button>
+        <button id="saveBtn" onclick="saveToCloud()" class="btn-primary">SYNC TO CLOUD</button>
+        <button onclick="toggleView()" class="btn-secondary">VIEW LIBRARY</button>
     </div>
 
-    <div id="librarySection" class="hidden mt-8 space-y-4">
-        <h2 class="serif text-2xl border-b border-[#855c3d] pb-2 text-[#3d2b1f]">Batch History</h2>
-        <div id="entriesList" class="space-y-4"></div>
-        <button onclick="toggleView()" class="w-full py-3 bg-gray-200 text-sm font-bold">Back to New Entry</button>
+    <div id="libraryView" class="hidden">
+        <h2 class="serif text-2xl mb-4 text-center">Batch History</h2>
+        <div id="historyList" class="space-y-4"></div>
+        <button onclick="toggleView()" class="btn-secondary">BACK TO MIXER</button>
     </div>
-
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-around">
-        <button onclick="showView('form')" class="text-xs uppercase font-bold">New Bake</button>
-        <button onclick="showView('library')" class="text-xs uppercase font-bold">Library</button>
-    </nav>
 
     <script>
-        // Database Setup
-        const db = new Dexie("SourdoughDB");
-        db.version(1).stores({
-            entries: '++id, mixDate, bakeDate, flourMill'
-        });
+        const CLOUD_URL = "https://script.google.com/macros/s/AKfycbzr7ohfzwz8GIhFUQ3C5mg0v2k3MGai8JlxZU33xAsNoQsg36n6I5cgyfrh1N2u1C5yug/exec";
 
-        function setToday(id) {
-            document.getElementById(id).value = new Date().toISOString().split('T')[0];
+        function setToday(id) { document.getElementById(id).value = new Date().toISOString().split('T')[0]; }
+
+        function toggleView() {
+            const isForm = !document.getElementById('formView').classList.contains('hidden');
+            document.getElementById('formView').classList.toggle('hidden');
+            document.getElementById('libraryView').classList.toggle('hidden');
+            if(isForm) loadHistory();
+        }
+
+        function addFlourRow() {
+            const container = document.getElementById('flourContainer');
+            const newRow = container.firstElementChild.cloneNode(true);
+            newRow.querySelector('.flour-qty').value = '';
+            container.appendChild(newRow);
         }
 
         function calculateFormula() {
-            const f = parseFloat(document.getElementById('flourWeight').value) || 0;
-            const lf = parseFloat(document.getElementById('levFlour').value) || 0;
-            const lw = parseFloat(document.getElementById('levWater').value) || 0;
-            const w1 = parseFloat(document.getElementById('water1').value) || 0;
-            const w2 = parseFloat(document.getElementById('water2').value) || 0;
-
-            const totalFlour = f + lf;
-            const totalWater = w1 + w2 + lw;
-
+            let totalFlour = parseFloat(document.getElementById('levFlour').value) || 0;
+            document.querySelectorAll('.flour-qty').forEach(input => totalFlour += (parseFloat(input.value) || 0));
+            const totalWater = (parseFloat(document.getElementById('water1').value) || 0) + 
+                               (parseFloat(document.getElementById('water2').value) || 0) + 
+                               (parseFloat(document.getElementById('levWater').value) || 0);
             if (totalFlour > 0) {
-                const hydration = ((totalWater / totalFlour) * 100).toFixed(1);
-                document.getElementById('totalHydrationDisplay').innerText = `Hydration: ${hydration}%`;
+                document.getElementById('totalHydration').innerText = `Hydration: ${((totalWater / totalFlour) * 100).toFixed(1)}%`;
             }
         }
 
-        async function saveEntry() {
+        async function saveToCloud() {
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = "SYNCING...";
+            btn.disabled = true;
+
+            let flourData = "";
+            document.querySelectorAll('.flour-row').forEach(row => {
+                const name = row.querySelector('.flour-select').value;
+                const qty = row.querySelector('.flour-qty').value;
+                if(qty) flourData += `${name}(${qty}g) `;
+            });
+
             const entry = {
                 mixDate: document.getElementById('mixDate').value,
                 bakeDate: document.getElementById('bakeDate').value,
-                flourMill: document.getElementById('flourMill').value,
-                flourWeight: document.getElementById('flourWeight').value,
+                flours: flourData,
+                hydration: document.getElementById('totalHydration').innerText,
                 water1: document.getElementById('water1').value,
                 water2: document.getElementById('water2').value,
-                levFlour: document.getElementById('levFlour').value,
-                levWater: document.getElementById('levWater').value,
+                salt: document.getElementById('salt').value,
+                yeast: document.getElementById('yeast').value,
                 addIns: document.getElementById('addIns').value,
-                coldProof: document.getElementById('coldProof').value,
-                bakeTemp: document.getElementById('bakeTemp').value,
-                bakeTime: document.getElementById('bakeTime').value,
-                hydration: document.getElementById('totalHydrationDisplay').innerText
+                levain: `F:${document.getElementById('levFlour').value} W:${document.getElementById('levWater').value}`,
+                process: `Temp:${document.getElementById('proofTemp').value} Folds:${document.getElementById('fold1').value},${document.getElementById('fold2').value}`
             };
 
-            await db.entries.add(entry);
-            alert("Bake saved to library!");
-            showView('library');
+            await fetch(CLOUD_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry) });
+            alert("Entry Saved!");
+            btn.innerText = "SYNC TO CLOUD";
+            btn.disabled = false;
         }
 
-        async function loadLibrary() {
-            const list = document.getElementById('entriesList');
-            list.innerHTML = '';
-            const entries = await db.entries.reverse().toArray();
-
-            entries.forEach(e => {
-                const card = document.createElement('div');
-                card.className = 'card p-4 bg-stone-50';
-                card.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <span class="text-[10px] font-bold uppercase text-rust">${e.mixDate}</span>
-                        <span class="formula-badge">${e.hydration}</span>
+        async function loadHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = "Loading...";
+            try {
+                const response = await fetch(CLOUD_URL);
+                const data = await response.json();
+                list.innerHTML = data.reverse().map(item => `
+                    <div class="card p-4">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] font-bold text-rust uppercase">${item.MixDate}</span>
+                            <span class="formula-badge">${item.Hydration}</span>
+                        </div>
+                        <p class="serif font-bold text-lg mt-1">${item.Flours}</p>
+                        <p class="text-[11px] opacity-75">Add-ins: ${item.AddIns || 'None'}</p>
+                        <div class="mt-2 pt-2 border-t text-[10px] flex gap-3 uppercase font-bold opacity-60">
+                            <span>Levain: ${item.Levain}</span>
+                            <span>${item.Process}</span>
+                        </div>
                     </div>
-                    <h3 class="serif text-lg font-bold">${e.flourMill}</h3>
-                    <p class="text-xs opacity-75">${e.addIns || 'No inclusions'}</p>
-                    <div class="mt-2 pt-2 border-t flex gap-4 text-[10px] font-bold">
-                        <span>BAKE: ${e.bakeTemp}°F</span>
-                        <span>PROOF: ${e.coldProof}h</span>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
-        }
-
-        function showView(view) {
-            if (view === 'form') {
-                document.getElementById('entryForm').classList.remove('hidden');
-                document.getElementById('librarySection').classList.add('hidden');
-            } else {
-                document.getElementById('entryForm').classList.add('hidden');
-                document.getElementById('librarySection').classList.remove('hidden');
-                loadLibrary();
+                `).join('');
+            } catch (e) {
+                list.innerHTML = "Error loading. Did you deploy the Script as 'Anyone'?";
             }
         }
     </script>
